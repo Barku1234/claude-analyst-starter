@@ -1,0 +1,42 @@
+# Outputs del usuario (todo local, jamás pushear)
+research/**
+!research/.gitkeep
+models/**
+!models/.gitkeep
+decks/**
+!decks/.gitkeep
+
+# Memoria personal — NO se sube al repo (cada usuario tiene la suya)
+memory/*.md
+!memory/MEMORY.md
+!memory/examples/**
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node/Python
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# VS Code local — ignorar todo salvo extensions/tasks/settings recomendados
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/settings.recommended.json
+
+# Claude Code local logs
+.claude/logs/
+.claude/cache/
+.claude/local-settings.json
+
+# Credenciales, jamás
+.env
+.env.local
+*.key
+*.pem
+credentials.json

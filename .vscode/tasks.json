@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Claude Analyst: Start Session",
+      "type": "shell",
+      "command": "echo",
+      "args": [
+        "Abrí el panel Claude Code a la derecha (Ctrl+Shift+P → Claude Code: Open Panel) y tipeá /start-session"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Claude Analyst: End Session",
+      "type": "shell",
+      "command": "echo",
+      "args": [
+        "En el panel Claude Code tipeá /end-session — Claude guarda la memoria y te pregunta si commit local"
+      ],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Claude Analyst: Update Starter",
+      "type": "shell",
+      "command": "git",
+      "args": ["pull"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
