@@ -73,15 +73,45 @@ function Update-SessionPath {
 function Get-CodeExe {
     $candidates = @(
         (Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code\Code.exe"),
-        (Join-Path $env:ProgramFiles "Microsoft VS Code\Code.exe")
+        (Join-Path $env:ProgramFiles "Microsoft VS Code\Code.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code Insiders\Code - Insiders.exe")
     )
     foreach ($p in $candidates) { if (Test-Path $p) { return $p } }
+    # Busqueda por registro: cubre instalaciones en rutas no estandar
+    $regRoots = @(
+        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+    )
+    foreach ($root in $regRoots) {
+        $keys = Get-ChildItem $root -ErrorAction SilentlyContinue
+        foreach ($k in $keys) {
+            $props = Get-ItemProperty $k.PSPath -ErrorAction SilentlyContinue
+            if ($props.DisplayName -like "Microsoft Visual Studio Code*" -and $props.InstallLocation) {
+                foreach ($exe in @("Code.exe", "Code - Insiders.exe")) {
+                    $full = Join-Path $props.InstallLocation $exe
+                    if (Test-Path $full) { return $full }
+                }
+            }
+        }
+    }
     return (Get-Tool "code")   # fallback: el shim code.cmd (tambien es path absoluto)
 }
 
 function Show-OutputTail($result) {
     $lines = $result.Output -split "`r?`n" | Where-Object { $_ -ne "" } | Select-Object -Last 6
     foreach ($l in $lines) { Write-Host "      | $l" -ForegroundColor DarkGray }
+}
+
+# Traduce exit codes conocidos de winget a un arreglo concreto
+function Get-WingetHint($code) {
+    switch ($code) {
+        -1978335217 { return "fuentes de winget rotas/vacias. Arreglo: correr  winget source reset --force  y despues  winget source update  y re-correr esto" }
+        -1978335212 { return "winget sin fuentes configuradas. Arreglo: correr  winget source reset --force  y despues  winget source update  y re-correr esto" }
+        -1978335224 { return "la descarga fallo (internet/proxy). Reintentar; si sigue, la red puede estar bloqueando" }
+        -1978335215 { return "hash del instalador no coincide. Arreglo: winget source update  y reintentar" }
+    }
+    return ""
 }
 
 function Invoke-ClaudeAnalystBootstrap {
@@ -116,8 +146,11 @@ function Invoke-ClaudeAnalystBootstrap {
     $isAdmin = (New-Object Security.Principal.WindowsPrincipal($identity)).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
     Log ("Admin: " + $isAdmin)
     if (-not $isAdmin) {
-        Write-Warn "No estas como Administrador. Los instaladores pueden pedir permiso (UAC) o fallar."
-        Write-Warn "Si abajo falla algo: cerra, abri PowerShell como admin, y re-corre el mismo comando."
+        Write-Warn "No estas como Administrador. Los instaladores pueden pedir permiso (UAC): dale que si."
+    } else {
+        Write-Warn "OJO: si Windows te pidio OTRO usuario y clave para abrir este PowerShell admin,"
+        Write-Warn "todo va a caer en el perfil de ESE usuario, no en el tuyo. En ese caso: cerra esto"
+        Write-Warn "y corre el mismo comando en un PowerShell NORMAL (sin admin)."
     }
 
     # --- 2. winget ---
@@ -152,7 +185,9 @@ function Invoke-ClaudeAnalystBootstrap {
         } else {
             Write-Err "fallo la instalacion (exit $($r.ExitCode)). Ultimas lineas:"
             Show-OutputTail $r
-            Add-Result "Node.js" $false "winget fallo (exit $($r.ExitCode)) - ver log"
+            $hint = Get-WingetHint $r.ExitCode
+            if ($hint) { Write-Warn $hint }
+            Add-Result "Node.js" $false ("winget fallo (exit $($r.ExitCode)) - " + $(if ($hint) { $hint } else { "ver log" }))
         }
     } else {
         Add-Result "Node.js" $false "sin winget - instalar manual desde nodejs.org"
@@ -177,7 +212,9 @@ function Invoke-ClaudeAnalystBootstrap {
         } else {
             Write-Err "fallo la instalacion (exit $($r.ExitCode)). Ultimas lineas:"
             Show-OutputTail $r
-            Add-Result "Git" $false "winget fallo (exit $($r.ExitCode)) - ver log"
+            $hint = Get-WingetHint $r.ExitCode
+            if ($hint) { Write-Warn $hint }
+            Add-Result "Git" $false ("winget fallo (exit $($r.ExitCode)) - " + $(if ($hint) { $hint } else { "ver log" }))
         }
     } else {
         Add-Result "Git" $false "sin winget - instalar manual desde git-scm.com"
@@ -206,6 +243,8 @@ function Invoke-ClaudeAnalystBootstrap {
         } else {
             Write-Warn "no se pudo instalar (exit $($r.ExitCode)). NO bloquea: podes arrancar igual."
             Show-OutputTail $r
+            $hint = Get-WingetHint $r.ExitCode
+            if ($hint) { Write-Warn $hint }
             Add-Result "Python" $false "fallo (no bloquea) - instalar despues desde python.org"
         }
     } else {
@@ -229,7 +268,9 @@ function Invoke-ClaudeAnalystBootstrap {
         } else {
             Write-Err "fallo la instalacion (exit $($r.ExitCode)). Ultimas lineas:"
             Show-OutputTail $r
-            Add-Result "VS Code" $false "winget fallo (exit $($r.ExitCode)) - ver log"
+            $hint = Get-WingetHint $r.ExitCode
+            if ($hint) { Write-Warn $hint }
+            Add-Result "VS Code" $false ("winget fallo (exit $($r.ExitCode)) - " + $(if ($hint) { $hint } else { "ver log" }))
         }
     } else {
         Add-Result "VS Code" $false "sin winget - instalar manual desde code.visualstudio.com"
@@ -425,7 +466,7 @@ Set-Alias -Name cre -Value cra
     if ($failed.Count -gt 0) {
         Write-Host ""
         Write-Host "  Que hacer con lo rojo:" -ForegroundColor Yellow
-        Write-Host "   1. Cerra esta ventana, abri PowerShell DE NUEVO (como admin)"
+        Write-Host "   1. Cerra esta ventana, abri un PowerShell NUEVO (normal, sin admin)"
         Write-Host "      y volve a pegar el mismo comando: retoma solo lo que falta."
         Write-Host "   2. Si vuelve a fallar: manda una foto de este resumen +"
         Write-Host "      el archivo claude-setup-log.txt que quedo en tu Escritorio."
