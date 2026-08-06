@@ -28,8 +28,9 @@ function Write-Hint($msg) { Write-Host "    ($msg)" -ForegroundColor DarkGray }
 
 $script:LogFile = Join-Path ([Environment]::GetFolderPath("Desktop")) "claude-setup-log.txt"
 $script:Results = @()
-# 0 = instalado OK / -1978335189 = winget dice "ya estaba / sin upgrade aplicable"
-$script:WingetOkCodes = @(0, -1978335189)
+# 0 = instalado OK / -1978335189 = "ya estaba, sin upgrade aplicable" /
+# -1978334963 = "ya estaba instalado" (INSTALL_ALREADY_INSTALLED)
+$script:WingetOkCodes = @(0, -1978335189, -1978334963)
 
 function Log($text) {
     try { Add-Content -Path $script:LogFile -Value $text -Encoding UTF8 -ErrorAction SilentlyContinue } catch { }
@@ -110,6 +111,10 @@ function Get-WingetHint($code) {
         -1978335212 { return "winget sin fuentes configuradas. Arreglo: correr  winget source reset --force  y despues  winget source update  y re-correr esto" }
         -1978335224 { return "la descarga fallo (internet/proxy). Reintentar; si sigue, la red puede estar bloqueando" }
         -1978335215 { return "hash del instalador no coincide. Arreglo: winget source update  y reintentar" }
+        -1978334964 { return "el permiso de Windows (UAC) se cancelo o vencio sin responder. Reintentar y darle SI apenas aparezca la ventanita" }
+        -1978334961 { return "instalacion bloqueada por politica de la maquina (IT). Instalar manual o hablar con sistemas" }
+        -1978334967 { return "Windows necesita REINICIAR para terminar la instalacion. Reiniciar y re-correr esto" }
+        -1978334966 { return "Windows necesita REINICIAR para poder instalar. Reiniciar y re-correr esto" }
     }
     return ""
 }
