@@ -34,15 +34,22 @@ irm https://raw.githubusercontent.com/Barku1234/claude-analyst-starter/main/boot
 ```
 
 ### Paso 3 — Esperar (~8 min)
-Vas a ver mensajes tipo `==> Instalando Node.js LTS...` en varios colores. Cuando termine, aparece:
+Vas a ver mensajes tipo `==> Node.js...` en varios colores. Al final aparece un **RESUMEN** con cada componente en `[OK]` verde o `[X]` rojo, y el script te pide **Enter** para cerrar la ventana (nunca se cierra sola).
 
 ```
 ============================================================
   LISTO. Todo instalado.
 ============================================================
+  RESUMEN:
+   [OK] Node.js  instalado v22...
+   [OK] Git  ya estaba
+   ...
 ```
 
-Y **VS Code se abre solo** apuntando al starter. Cerrá la ventana de PowerShell, ya no la necesitás.
+Y **VS Code se abre solo** apuntando al starter.
+
+- Si hay algo en **rojo**, el mismo resumen te dice qué hacer (casi siempre: cerrar la ventana, abrir PowerShell de nuevo y volver a pegar el mismo comando — retoma solo lo que falta).
+- Todo lo que pasó queda logueado en **`claude-setup-log.txt` en tu Escritorio** — si pedís ayuda, mandá ese archivo.
 
 ### Paso 4 — Login en Claude
 En VS Code, mirá el **borde derecho**. Debería aparecer un icono naranja (Claude Code). Si no lo ves:
@@ -112,6 +119,13 @@ code claude-analyst-starter
 ---
 
 ## Troubleshooting
+
+### "La ventana de PowerShell se cerró sola"
+Era un bug de la primera versión del bootstrap (arreglado el 2026-08-06). Volvé a pegar el mismo comando: la versión nueva **nunca cierra la ventana sola**, muestra un resumen `[OK]`/`[X]` al final y deja un log `claude-setup-log.txt` en tu Escritorio. Es idempotente: lo que ya se instaló lo saltea.
+
+### "Algo salió en [X] rojo en el resumen"
+1. Cerrá la ventana, abrí PowerShell **de nuevo** (como admin) y volvé a pegar el mismo comando — muchos fallos son solo que la ventana vieja no veía los programas recién instalados.
+2. Si vuelve a fallar: mandá una foto del resumen + el archivo **`claude-setup-log.txt`** de tu Escritorio a quien te pasó este repo.
 
 ### "winget no está instalado"
 Instalalo desde Microsoft Store: buscá **"App Installer"** de Microsoft → Get. Después volvé a correr el bootstrap.
